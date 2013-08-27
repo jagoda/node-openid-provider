@@ -1,0 +1,45 @@
+decoding openid 2.0
+
+=======   CONSUMER POSTS TO /login =====
+#   Request
+openid.assoc_type=HMAC-SHA1
+&openid.dh_consumer_public=Nq3yh/XIQ4Qz3buvwHbfCiYypj9oWYPS2HJo21JTT1VIpCypkQZ7TTru45SvPgyUZ9WXwhQH6N1Po/dHlomAxJHsdTv8WwiYApf6bQL3fXGR5d1m2TLaXOx8P/CIL6SNJ5ri7eq /uCUaLyB9lYt9J5jCSMeMyEk4TvM09BJGqk==
+&openid.mode=associate
+&openid.ns=http://specs.openid.net/auth/2.0
+&openid.session_type=DH-SHA1
+
+#   Response
+assoc_handle:{HMAC-SHA1}{5211c6f6}{DAMaSQ==}
+assoc_type:HMAC-SHA1
+dh_server_public:AJCVm8Atv4UqTLQna//jXk6k6/yF9oS27zFdfPqGrJMqeJlVFCAWpYPaIv7E1uvOAEEr3sTG9U4jbxuGeA+/WAoiOVa1PMhoy7LP9qPh1zf5Q0BQqmxkapJe4ikGDhIcn01urFnS8JUwR/4MO6wCqMl85GO9RE0UXrhe3Em6UFCX
+enc_mac_key:DA6ga54nxxzDdvHlkJt/QjI9gJM=
+expires_in:1209600
+ns:http://specs.openid.net/auth/2.0
+session_type:DH-SHA1
+
+
+=======   CLIENT POSTED TO /login URL WITH THIS BODY =====
+{
+  'openid.return_to': 'http://localhost:8000/process?janrain_nonce=2013-08-26T12%3A56%3A35ZFe3hoO',
+  'openid.realm': 'http://localhost:8000/',
+  'openid.ns': 'http://specs.openid.net/auth/2.0',
+  'openid.claimed_id': 'http://specs.openid.net/auth/2.0/identifier_select',
+  'openid.mode': 'checkid_setup',
+  'openid.assoc_handle': 'jnq8x+KWjlzjFTl3humZdp97IZvZF2MxYAly7hKdIBE=',
+  'openid.identity': 'http://specs.openid.net/auth/2.0/identifier_select'
+}
+
+
+=======   DATA COMING BACK TO THE CONSUMER VIA GET ====
+GET /process?janrain_nonce=2013-08-19T03:46:19ZMtRWQo
+openid.assoc_handle={HMAC-SHA1}{5211950b}{OjQDbw==}
+openid.claimed_id=http://localhost:8000/id/chris
+openid.identity=http://localhost:8000/id/chris
+openid.mode=id_res
+openid.ns=http://specs.openid.net/auth/2.0
+openid.ns.sreg=http://openid.net/extensions/sreg/1.1
+openid.op_endpoint=http://localhost:8000/openidserver
+openid.response_nonce=2013-08-19T03:46:28ZZtFThL
+openid.return_to=http://localhost:8001/process?janrain_nonce=2013-08-19T03%3A46%3A19ZMtRWQo
+openid.sig=7tlG8sO1NHBRkltBPMUd+/qSwEI=
+openid.signed=assoc_handle,claimed_id,identity,mode,ns,ns.sreg,op_endpoint,response_nonce,return_to,signed
