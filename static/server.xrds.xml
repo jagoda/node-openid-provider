@@ -2,7 +2,7 @@
 <xrds:XRDS xmlns:xrds="xri://$xrds" xmlns="xri://$xrd*($v*2.0)">
 	<XRD>
 		<Service priority="0">
-			<Type>http://specs.openid.net/auth/2.0/server</Type>
+			<Type>http://specs.openid.net/auth/2.0/signon</Type>
 			<URI>http://localhost:3000/login</URI>
 		</Service>
 	</XRD>

@@ -43,3 +43,7 @@ openid.response_nonce=2013-08-19T03:46:28ZZtFThL
 openid.return_to=http://localhost:8001/process?janrain_nonce=2013-08-19T03%3A46%3A19ZMtRWQo
 openid.sig=7tlG8sO1NHBRkltBPMUd+/qSwEI=
 openid.signed=assoc_handle,claimed_id,identity,mode,ns,ns.sreg,op_endpoint,response_nonce,return_to,signed
+
+////
+node-openid
+- checkout line 786 for info on computing the shared secret

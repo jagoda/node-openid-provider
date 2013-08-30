@@ -11,6 +11,15 @@ var OPENID_OP_ENDPOINT = "http://localhost:3000/login";
 //globals
 var servers = {};
 
+function btwoc(i) {
+	if(i[0] < 127) {
+		return Buffer.concat(new Buffer(1), i);
+	}
+	else {
+		return i;
+	}
+}
+
 function associate(options) {
 	// var modulus = options['openid.dh_modulus'] || DH_MODULUS;
 	// var generator = options['openid.dh_gen'] || DH_GENERATOR;
@@ -37,11 +46,16 @@ function associate(options) {
 	response['session_type'] = options['openid.session_type'];
 	response['assoc_type'] = options['openid.assoc_type'];
 	response['expires_in'] = 1209600; //in seconds
-	response['dh_server_public'] = s.server_public; //@needs btwoc
+	response['dh_server_public'] = s.server_public;
 	//create the encoded mac
 	//@needs to be generated correctly
+	var mac_key = crypto.randomBytes(20);
 	var shasum = crypto.createHash('sha1');
-	shasum.update(new Buffer(s.shared_secret, 'base64').readUInt32BE(0).toString());
+	shasum.update(
+		btwoc(
+			new Buffer(s.shared_secret, 'base64')
+		)
+	);
 	response['enc_mac_key'] = shasum.digest('base64');
 
 	//build response
@@ -74,7 +88,7 @@ function checkid_setup(options) {
 	}
 	response['openid.signed'] = openid_signed;
 	//@needs to be generated correctly
-	response['openid.sig'] = crypto.createHmac('sha1', servers[options['openid.assoc_handle']].shared_secret)
+	response['openid.sig'] = crypto.createHmac('sha1', new Buffer(servers[options['openid.assoc_handle']].shared_secret), 'base64')
 								.update(kvstr)
 								.digest('base64');
 
