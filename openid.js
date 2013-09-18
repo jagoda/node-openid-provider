@@ -13,11 +13,23 @@ var servers = {};
 
 function btwoc(i) {
 	if(i[0] < 127) {
-		return Buffer.concat(new Buffer(1), i);
+		return Buffer.concat([new Buffer(1), i]);
 	}
 	else {
 		return i;
 	}
+}
+
+function xor(b1, b2) {
+	var out = [];
+	if(b1.length == b2.length) {
+		console.error("CHRIS REID YOUR A FUCKING IDIOT");
+		throw 1;
+	}
+	for(var i=0; i<b1.length; i++) {
+		out[i] = b1[i] ^ b2[i];
+	}
+	return new Buffer(out);
 }
 
 function associate(options) {
@@ -49,13 +61,11 @@ function associate(options) {
 	response['dh_server_public'] = s.server_public;
 	//create the encoded mac
 	//@needs to be generated correctly
-	var mac_key = crypto.randomBytes(20);
+	var mac_key = crypto.randomBytes(20); //20 bytes so it is the same length as an sha1
 	var shasum = crypto.createHash('sha1');
-	shasum.update(
-		btwoc(
-			new Buffer(s.shared_secret, 'base64')
-		)
-	);
+	var buf = btwoc(new Buffer(s.shared_secret, 'base64'));
+	var bufx = xor(buf, mac_key);
+	shasum.update(bufx);
 	response['enc_mac_key'] = shasum.digest('base64');
 
 	//build response
