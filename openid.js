@@ -12,25 +12,51 @@ var OPENID_OP_ENDPOINT = "http://localhost:3000/login";
 var servers = {};
 
 function btwoc(i) {
-	if(i[0] < 127) {
-		return Buffer.concat([new Buffer(1), i]);
+	if(i[0] > 127) {
+		return Buffer.concat([new Buffer([0]), i]);
 	}
 	else {
 		return i;
 	}
 }
 
-function xor(b1, b2) {
-	var out = [];
-	if(b1.length == b2.length) {
-		console.error("CHRIS REID YOUR A FUCKING IDIOT");
-		throw 1;
+function unbtwoc(i) {
+	if(i[0] === 0) {
+		//strip first character
 	}
-	for(var i=0; i<b1.length; i++) {
-		out[i] = b1[i] ^ b2[i];
-	}
-	return new Buffer(out);
+	return i;
 }
+
+function xor(b, a)
+{
+  if(a.length != b.length)
+  {
+    throw new Error('Length must match for xor');
+  }
+
+  var r = '';
+  for(var i = 0; i < a.length; ++i)
+  {
+    r += String.fromCharCode(a.charCodeAt(i) ^ b.charCodeAt(i));
+  }
+
+  console.log("MACKEY: ", new Buffer(a, 'binary').toString('base64'));
+  console.log("ENCMACKEY: ", new Buffer(r, 'binary').toString('base64'));
+  return new Buffer(r, 'binary');
+}
+
+// function xor(b1, b2) {
+// 	var out = [];
+// 	if(b1.length != b2.length) {
+// 		throw "CHRIS REID YOUR A FUCKING IDIOT";
+// 	}
+// 	for(var i=0; i<b1.length; i++) {
+// 		out[i] = b2[i] ^ b1[i];
+// 	}
+// 	console.log("MACKEY: ", b2.toString('base64'));
+// 	console.log("ENCMACKEY: ", new Buffer(out).toString('base64'));
+// 	return new Buffer(out);
+// }
 
 function associate(options) {
 	// var modulus = options['openid.dh_modulus'] || DH_MODULUS;
@@ -50,7 +76,9 @@ function associate(options) {
 		consumer_public: options['openid.dh_consumer_public'],
 		shared_secret: dh.computeSecret(options['openid.dh_consumer_public'], 'base64', 'base64')
 	}
-	servers[assoc_handle] = s;
+
+	console.log("PUBLIC: ", s.server_public);
+	console.log("SECRET: ", s.shared_secret);
 
 	var response = {}
 	response['ns'] = OPENID_NS;
@@ -60,13 +88,17 @@ function associate(options) {
 	response['expires_in'] = 1209600; //in seconds
 	response['dh_server_public'] = s.server_public;
 	//create the encoded mac
-	//@needs to be generated correctly
-	var mac_key = crypto.randomBytes(20); //20 bytes so it is the same length as an sha1
-	var shasum = crypto.createHash('sha1');
+	//@needs to be generated correctly[]
+	var mac_key = crypto.randomBytes(32); //20 bytes so it is the same length as an sha1, 32 sha256
+	var shasum = crypto.createHash('sha256');
 	var buf = btwoc(new Buffer(s.shared_secret, 'base64'));
-	var bufx = xor(buf, mac_key);
-	shasum.update(bufx);
-	response['enc_mac_key'] = shasum.digest('base64');
+	shasum.update(buf);
+	var bufx = xor(shasum.digest('binary'), mac_key.toString('binary'));
+	response['enc_mac_key'] = bufx.toString('base64');
+
+	//save the mac key
+	s.mac_key = mac_key.toString('base64');
+	servers[assoc_handle] = s;
 
 	//build response
 	var output = "";
@@ -94,13 +126,15 @@ function checkid_setup(options) {
 	var kvstr = "";
 	for(var key in response) {
 		openid_signed += key.slice(7)+","; //remove "openid." from the start of the key
-		kvstr += key+":"+response[key]+"\n";
+		kvstr += key.slice(7)+":"+response[key]+"\n";
 	}
-	response['openid.signed'] = openid_signed;
+	response['openid.signed'] = openid_signed.slice(0,-1);
 	//@needs to be generated correctly
-	response['openid.sig'] = crypto.createHmac('sha1', new Buffer(servers[options['openid.assoc_handle']].shared_secret), 'base64')
-								.update(kvstr)
-								.digest('base64');
+	console.log(kvstr);
+	var ss = servers[options['openid.assoc_handle']].mac_key
+	var hmac = crypto.createHmac('sha256', new Buffer(ss, 'base64').toString('binary'));
+	hmac.update(kvstr);
+	response['openid.sig'] = hmac.digest('base64');
 
 	//convert response to url
 	var return_to = url.parse(
