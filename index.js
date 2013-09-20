@@ -1,56 +1,38 @@
-var fs = require('fs');
 var express = require('express');
-//var templates = require('./templates');
-var openid = require('./openid.js').openid;
+var OpenIDProvider = require('./provider.js');
+
+var oidp = new OpenIDProvider("http://localhost:3000/login");
 
 var app = express();
 //app.use(express.logger());
 app.use(express.bodyParser());
 
-app.get('/id/:name', function(req, res) {
-	console.log(req.method, req.path);
-	fs.readFile('./static/user.xrds.xml', function(err, data) {
-		res.header('Content-Type', 'application/xrds+xml;charset=utf-8');
-		res.send(data);
-		res.end();
-	});
-});
-
-app.get('/yadis/:name', function(req, res) {
-	console.log(req.method, req.path);
-	fs.readFile('./static/user.xrds.xml', function(err, data) {
-		res.header('Content-Type', 'application/xrds+xml;charset=utf-8');
-		res.send(data);
-		res.end();
-	});
-});
-
-app.get('/', function(req, res) {
-	console.log(req.method, req.path);
-	fs.readFile('./static/server.xrds.xml', function(err, data) {
-		res.header('Content-Type', 'application/xrds+xml;charset=utf-8');
-		res.send(data);
-		res.end();
-	});
-});
-
-app.get('/login', function(req, res) {
-	console.log(req.method, req.path);
-	res.send(openid(req, res));
+app.get('/', function (req, res) {
+	res.header('Content-Type', 'application/xrds+xml;charset=utf-8');
+	var r = oidp.XRDSDocument();
+	res.send(r);
 	res.end();
 });
 
-app.post('/*', function(req, res) {
-	console.log(req.method, req.path);
-	res.send(openid(req, res));
+app.get('/id/:name', function (req, res) {
+	var ID_HOST = "http://localhost:3000/id/" + req.params.name;
+	res.header('Content-Type', 'application/xrds+xml;charset=utf-8');
+	var r = oidp.XRDSDocument(ID_HOST);
+	res.send(r);
 	res.end();
 });
 
-app.get('/*', function(req, res) {
-	console.log(req.method, req.path, "NOT HANDLED");
-	//res.send(openid(req, res));
+app.get('/login', function (req, res) {
+	var r = oidp.handleRequest(req.query);
+	res.send(r);
+	res.end();
+});
+
+app.post('/*', function (req, res) {
+	var r = oidp.handleRequest(req.body);
+	res.send(r);
 	res.end();
 });
 
 app.listen(3000);
-console.log("serving on port 3000");
+console.log("Serving on port 3000");
