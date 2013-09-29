@@ -7,10 +7,14 @@ var DH_MODULUS_B64 = new Buffer(DH_MODULUS_HEX, 'hex').toString('base64');
 var OPENID_NS = "http://specs.openid.net/auth/2.0";
 var OPENID_SERVICE_TYPE = "http://specs.openid.net/auth/2.0/signon";
 
+
 /**
  * Utility functions
  */
+//@TODO: I have reason to believe this function doesn't work correctly
+//@DEPRECIATED: only ever used in associate, migrate into the associate code
 function btwoc(i) {
+	console.warn("btwoc is deprecated");
 	if(i[0] > 127) {
 		return Buffer.concat([new Buffer([0]), i]);
 	}
@@ -19,9 +23,11 @@ function btwoc(i) {
 	}
 }
 
+//@DEPRECIATED: only ever used in associate, migrate into the associate code
 function xor(bb, ab)
 {
 	//@TODO: convert this function to use native buffers instead of converting between buffers and binary strings
+	console.warn("xor is deprecated");
 	var a = ab.toString('binary');
 	var b = bb.toString('binary');
 	if(a.length != b.length)
@@ -38,7 +44,9 @@ function xor(bb, ab)
 	return new Buffer(r, 'binary');
 }
 
+//@DEPRECATED
 function keyValueFormEncode(obj) {
+	console.warn("keyValueFormEncode is deprecated");
 	var output = "";
 	for(var key in obj) {
 		output += key+":"+obj[key]+"\n";
@@ -46,7 +54,9 @@ function keyValueFormEncode(obj) {
 	return output;
 }
 
+//@DEPRECATED
 function prependOpenIDNamespace(obj) {
+	console.warn("prependOpenIDNamespace is deprecated");
 	var NAMESPACE = "openid.";
 	var out = {};
 	for(var key in obj) {
@@ -55,19 +65,26 @@ function prependOpenIDNamespace(obj) {
 	return out;
 }
 
+
 /**
  * Errors
  */
 function OpenIDModeNotFoundException(mode) {
 	this.name = "MODE_NOT_FOUND";
-	this.message = "Invalid mode provided";
+	this.message = "Invalid mode provided.";
 	console.error(this.message, mode);
 }
 function OpenIDAssocHandleNotFoundException(assoc_handle) {
 	this.name = "ASSOC_HANDLE_NOT_FOUND";
-	this.message = "Provided assoc_handle does not exist";
+	this.message = "Provided assoc_handle does not exist.";
 	console.error(this.message, assoc_handle);
 }
+function OpenIDResponseNoReturnUrlException() {
+	this.name = "RETURN_URL_NOT_PROVIDED";
+	this.message = "No return_url provided. Cannot create url from response."
+	console.error(this.message);
+}
+
 
 /**
  * An interface for creating and retrieving openid associations
@@ -99,6 +116,83 @@ OpenIDAssociationService.prototype.find = function(assoc_handle) {
 	}
 }
 
+
+/**
+ * Response builder
+ */
+function Response(fields) {
+	this._fields = fields;
+}
+
+Response.prototype.fields = function() {
+	return this._fields;
+}
+
+Response.prototype.get = function(field) {
+	return this._fields[field] || null;
+}
+
+Response.prototype.set = function(field, value) {
+	this._fields[field] = value;
+	return this;
+}
+
+Response.prototype.unset = function(field) {
+	delete this._fields[field];
+	return this;
+}
+
+Response.prototype.sign = function(hashAlgorithm, secretBuffer) {
+	//get the form elements to be signed
+	var signed = "";
+	for(var key in this.fields()) {
+		signed += key+",";
+	}
+	signed = signed.slice(0,-1);
+
+	//sign the form
+	var form = this.toForm();
+	var hmac = crypto.createHmac(hashAlgorithm, secretBuffer.toString('binary'));
+	hmac.update(form);
+
+	//add the new fields
+	this.set('signed', signed);
+	this.set('sig', hmac.digest('base64'));
+
+	return this;
+}
+
+Response.prototype.toForm = function() {
+	var output = "";
+	for(var key in this.fields()) {
+		output += key+":"+this._fields[key]+"\n";
+	}
+	return output;
+}
+
+Response.prototype.toURL = function() {
+	if(!this.get('return_to')) {
+		throw new OpenIDResponseNoReturnUrlException();
+	}
+	var parsed_url = url.parse(this.get('return_to'), true);
+	var namespaced_fields = this._openidNamespacedFields();
+	for (var key in namespaced_fields) {
+		parsed_url.query[key] = namespaced_fields[key];
+	}
+	delete parsed_url['search']; //force url.format to re-encode the querystring
+	return url.format(parsed_url);
+}
+
+Response.prototype._openidNamespacedFields = function() {
+	var NAMESPACE = "openid.";
+	var out = {};
+	for(var key in this._fields) {
+		out[NAMESPACE+key] = this._fields[key];
+	}
+	return out;
+}
+
+
 /**
  * The openid provider
  */
@@ -108,14 +202,6 @@ function OpenIDProvider(OPENID_OP_ENDPOINT) {
 }
 
 OpenIDProvider.prototype.handleRequest = function(options) {
-	// this.stuff = "herp";
-	// if(options['openid.mode'].toLowerCase() in this.handlers) {
-	// 	var handler = this.handlers[options['openid.mode'].toLowerCase()];
-	// 	return handler(options);
-	// }
-	// else {
-	// 	throw new OpenIDModeNotFoundException(options['openid.mode']);
-	// }
 	if(options['openid.mode'].toLowerCase() in this) {
 		return this[options['openid.mode'].toLowerCase()](options);
 	}
@@ -139,17 +225,17 @@ OpenIDProvider.prototype.associate = function(options) {
 	assoc.secret = mac_key.toString('base64');
 	var enc_mac_key = xor(shasum.digest(), mac_key);
 	//build response
-	var response = {
+	var response = new Response({
 		ns: OPENID_NS,
 		assoc_handle: assoc.handle,
 		session_type: options['openid.session_type'], //no-encryption|DH-SHA1|DH-SHA256
 		assoc_type: options['openid.assoc_type'], //{non-existent}|HMAC-SHA1|HMAC-SHA256
-		expires_in: 1209600, //@TODO: set this somewhere?
+		expires_in: 60, //@TODO: set this somewhere? 1209600 = 14 days
 		dh_server_public: dh.getPublicKey('base64'),
 		enc_mac_key: enc_mac_key.toString('base64')
-	}
+	});
 	//encode and return
-	return keyValueFormEncode(response);
+	return response.toForm();
 }
 
 OpenIDProvider.prototype.checkid_setup = function(options) {
@@ -158,36 +244,25 @@ OpenIDProvider.prototype.checkid_setup = function(options) {
 	var IDENTITY = "http://localhost:3000/id/chris";
 	var assoc = this.associations.find(options['openid.assoc_handle']);
 	if(assoc == null) {
+		//perform non assoc mode
 		throw new OpenIDAssocHandleNotFoundException(options['openid.assoc_handle']);
 	}
-	var response = {
+	var response = new Response({
 		ns: OPENID_NS,
 		mode: "id_res",
 		op_endpoint: this.OPENID_OP_ENDPOINT,
 		claimed_id: IDENTITY,
 		identity: IDENTITY,
-		return_to: options['openid.return_to'],
-		response_nonce: new Date().toISOString()+"UNIQUE",
+		return_to: unescape(options['openid.return_to']),
+		response_nonce: new Date().toISOString().split(".")[0]+"Z"+"UNIQUE", //the openid spec doesn't use correct iso strings?
 		assoc_handle: assoc.handle
-	}
-	//get the fields to sign
-	var openid_signed = "";
-	for(var key in response) {
-		openid_signed += key+",";
-	}
-	openid_signed = openid_signed.slice(0,-1);
-	//create the form and sign it
-	var form = keyValueFormEncode(response);
-	var hmac = crypto.createHmac(assoc.hash, new Buffer(assoc.secret, 'base64').toString('binary'));
-	hmac.update(form);
-	//attach sig to response
-	response.signed = openid_signed;
-	response.sig = hmac.digest('base64');
-	//convert response to url
-	var return_to = url.parse( unescape(options['openid.return_to']), true );
-	return_to.query = prependOpenIDNamespace(response);
-	delete return_to['search'];
-	return '<a href="'+url.format(return_to)+'">Log into the server</a>';
+	});
+	response.sign(assoc.hash, new Buffer(assoc.secret, 'base64'));
+	return '<a href="'+response.toURL()+'">Log into the server</a>';
+}
+
+OpenIDProvider.prototype.check_authentication = function(options) {
+	console.log("##> Trying to check check_authentication, but it's going to fail");
 }
 
 OpenIDProvider.prototype.XRDSDocument = function(LocalID) {
