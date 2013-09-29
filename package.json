@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "node --debug=5858 index2.js"
+    "start": "node --debug=5858 index.js"
   },
   "repository": {
     "type": "git",
@@ -15,5 +15,8 @@
   "license": "BSD-2-Clause",
   "bugs": {
     "url": "https://github.com/reidsy/node-openid-provider/issues"
+  },
+  "dependencies": {
+    "express": "~3.4.0"
   }
 }
