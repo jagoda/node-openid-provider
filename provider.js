@@ -134,7 +134,7 @@ OpenIDAssociationService.prototype.find = function(assoc_handle) {
  * Response builder
  */
 function Response(fields) {
-	this._fields = fields;
+	this._fields = fields || {};
 }
 
 Response.prototype.fields = function() {
@@ -267,16 +267,16 @@ OpenIDProvider.prototype.checkid_setup = function(options) {
 		response_nonce: new Date().toISOString().split(".")[0]+"Z"+"UNIQUE", //the openid spec doesn't use correct iso strings?
 	});
 
+	if(assoc == null && options['openid.assoc_handle']) { //if the consumer provided a handle, tell them it is invalid
+		response.set('invalidate_handle', options['openid.assoc_handle']);
+	}
+
 	if(assoc == null) { //create an association because a valid handle wasn't provided
 		assoc = this.associations.createWithHash('sha256');
 	}
 
 	response.set('assoc_handle', assoc.handle);
 	response.sign(assoc.hash, new Buffer(assoc.secret, 'base64'));
-
-	if(options['openid.assoc_handle']) { //if the consumer provided a handle, tell them it is invalid
-		response.set('invalidate_handle', options['openid.assoc_handle']);
-	}
 
 	return '<a href="'+response.toURL()+'">Log into the server</a>';
 }
@@ -288,13 +288,36 @@ OpenIDProvider.prototype.checkid_immediate = function(options) {
 }
 
 OpenIDProvider.prototype.check_authentication = function(options) {
-	//@TODO: Not Implemented
-	console.error("check_authentication not yet implemented");
-	var response = new Response({
-		ns: OPENID_NS,
-		is_valid: "true"
+	var validation = new Response({
+		ns: OPENID_NS
 	});
-	return response.toForm();
+
+	var assoc = this.associations.find(options['openid.assoc_handle']);
+	if(assoc == null) { //fail if they havn't given an assoc_handle
+		validation.set('is_valid', 'false');
+		return validation.toForm();
+	}
+
+	//rebuild the form
+	var response = new Response();
+	var fields = options['openid.signed'].split(',');
+	for(var field in fields) {
+		response.set(fields[field], options["openid." + fields[field]] );
+	}
+	response.set('mode', 'id_res'); //set the mode to id_res because that is what was originally signed
+
+	response.sign(assoc.hash, new Buffer(assoc.secret, 'base64'));
+
+	//check it's correct and respond
+	if(   response.get('sig') == options['openid.sig'] &&
+	   response.get('signed') == options['openid.signed'] ) {
+		validation.set('is_valid', 'true');
+	}
+	else {
+		validation.set('is_valid', 'false');
+	}
+
+	return validation.toForm();
 }
 
 OpenIDProvider.prototype.XRDSDocument = function(LocalID) {
