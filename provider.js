@@ -90,8 +90,11 @@ function OpenIDResponseNoReturnUrlException() {
  * An interface for creating and retrieving openid associations
  */
 function OpenIDAssociationService() {
-	//@TODO: this is a memory database, should probably be an actual database
-	this.assocs = [];
+	//@TODO: this is a memory database, should probably be an actual database.
+	//@TODO: require an OpenIDAssociationServiceStorage object to be passed in.
+	//       This object would be responsible for storing and retrieving the assocs.
+	//@TODO: move to an async system. Probably requires a large number of changes around the whole codebase.
+	this._assocs = [];
 }
 
 OpenIDAssociationService.prototype.create = function() {
@@ -103,13 +106,23 @@ OpenIDAssociationService.prototype.create = function() {
 	var assoc = {
 		handle: assoc_handle
 	}
-	this.assocs[assoc_handle] = assoc;
+	this._assocs[assoc_handle] = assoc;
+	return assoc;
+}
+
+OpenIDAssociationService.prototype.createWithHash = function(hashAlgorithm) {
+	if(hashAlgorithm != 'sha1' || hashAlgorithm != 'sha256') {
+		hashAlgorithm = 'sha256';
+	}
+	var assoc = this.create();
+	assoc.hash = hashAlgorithm;
+	assoc.secret = crypto.randomBytes(hashAlgorithm == 'sha1' ? 20 : 32).toString('base64');
 	return assoc;
 }
 
 OpenIDAssociationService.prototype.find = function(assoc_handle) {
-	if(assoc_handle in this.assocs) {
-		return this.assocs[assoc_handle];
+	if(assoc_handle in this._assocs) {
+		return this._assocs[assoc_handle];
 	}
 	else {
 		return null;
@@ -243,10 +256,7 @@ OpenIDProvider.prototype.checkid_setup = function(options) {
 	//@TODO: response_nonce "UNIQUE" needs to be unique
 	var IDENTITY = "http://localhost:3000/id/chris";
 	var assoc = this.associations.find(options['openid.assoc_handle']);
-	if(assoc == null) {
-		//perform non assoc mode
-		throw new OpenIDAssocHandleNotFoundException(options['openid.assoc_handle']);
-	}
+	
 	var response = new Response({
 		ns: OPENID_NS,
 		mode: "id_res",
@@ -255,14 +265,36 @@ OpenIDProvider.prototype.checkid_setup = function(options) {
 		identity: IDENTITY,
 		return_to: unescape(options['openid.return_to']),
 		response_nonce: new Date().toISOString().split(".")[0]+"Z"+"UNIQUE", //the openid spec doesn't use correct iso strings?
-		assoc_handle: assoc.handle
 	});
+
+	if(assoc == null) { //create an association because a valid handle wasn't provided
+		assoc = this.associations.createWithHash('sha256');
+	}
+
+	response.set('assoc_handle', assoc.handle);
 	response.sign(assoc.hash, new Buffer(assoc.secret, 'base64'));
+
+	if(options['openid.assoc_handle']) { //if the consumer provided a handle, tell them it is invalid
+		response.set('invalidate_handle', options['openid.assoc_handle']);
+	}
+
 	return '<a href="'+response.toURL()+'">Log into the server</a>';
 }
 
+OpenIDProvider.prototype.checkid_immediate = function(options) {
+	//@TODO: Not Implemented
+	console.error("checkid_immediate not yet implemented");
+	throw new OpenIDModeNotFoundException(options['openid.mode']);
+}
+
 OpenIDProvider.prototype.check_authentication = function(options) {
-	console.log("##> Trying to check check_authentication, but it's going to fail");
+	//@TODO: Not Implemented
+	console.error("check_authentication not yet implemented");
+	var response = new Response({
+		ns: OPENID_NS,
+		is_valid: "true"
+	});
+	return response.toForm();
 }
 
 OpenIDProvider.prototype.XRDSDocument = function(LocalID) {
