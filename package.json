@@ -11,7 +11,7 @@
     "type": "git",
     "url": "https://github.com/reidsy/node-openid-provider"
   },
-  "author": "Chris Reid",
+  "author": "Chris Reid <chris@reidsy.com> (http://reidsy.com/)",
   "license": "BSD-2-Clause",
   "bugs": {
     "url": "https://github.com/reidsy/node-openid-provider/issues"

@@ -1,13 +1,16 @@
 var express = require('express');
 var OpenIDProvider = require('./provider.js');
 
-var oidp = new OpenIDProvider("http://localhost:3000/login");
+var oidp = new OpenIDProvider("http://home.reidsy.com/login", {
+	association_expires: 60
+});
 
 var app = express();
 //app.use(express.logger());
 app.use(express.bodyParser());
 
 app.get('/', function (req, res) {
+	console.log(req.method + " " + req.path, req.body['openid.mode']);
 	res.header('Content-Type', 'application/xrds+xml;charset=utf-8');
 	var r = oidp.XRDSDocument();
 	res.send(r);
@@ -15,7 +18,8 @@ app.get('/', function (req, res) {
 });
 
 app.get('/id/:name', function (req, res) {
-	var ID_HOST = "http://localhost:3000/id/" + req.params.name;
+	console.log(req.method + " " + req.path, req.body['openid.mode']);
+	var ID_HOST = "http://home.reidsy.com/id/" + req.params.name;
 	res.header('Content-Type', 'application/xrds+xml;charset=utf-8');
 	var r = oidp.XRDSDocument(ID_HOST);
 	res.send(r);
@@ -23,12 +27,14 @@ app.get('/id/:name', function (req, res) {
 });
 
 app.get('/login', function (req, res) {
+	console.log(req.method + " " + req.path, req.query['openid.mode']);
 	var r = oidp.handleRequest(req.query);
 	res.send(r);
 	res.end();
 });
 
 app.post('/*', function (req, res) {
+	console.log(req.method + " " + req.path, req.body['openid.mode']);
 	var r = oidp.handleRequest(req.body);
 	res.send(r);
 	res.end();

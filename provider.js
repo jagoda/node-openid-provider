@@ -209,9 +209,17 @@ Response.prototype._openidNamespacedFields = function() {
 /**
  * The openid provider
  */
-function OpenIDProvider(OPENID_OP_ENDPOINT) {
+function OpenIDProvider(OPENID_OP_ENDPOINT, user_config) {
 	this.OPENID_OP_ENDPOINT = OPENID_OP_ENDPOINT;
 	this.associations = new OpenIDAssociationService();
+	
+	this.config = {
+		association_expires: 1209600 //1209600 seconds == 14 days
+	}
+	//merge options
+	for(var key in user_config || {}) {
+		this.config[key] = user_config[key];
+	}
 }
 
 OpenIDProvider.prototype.handleRequest = function(options) {
@@ -243,7 +251,7 @@ OpenIDProvider.prototype.associate = function(options) {
 		assoc_handle: assoc.handle,
 		session_type: options['openid.session_type'], //no-encryption|DH-SHA1|DH-SHA256
 		assoc_type: options['openid.assoc_type'], //{non-existent}|HMAC-SHA1|HMAC-SHA256
-		expires_in: 60, //@TODO: set this somewhere? 1209600 = 14 days
+		expires_in: this.config.association_expires,
 		dh_server_public: dh.getPublicKey('base64'),
 		enc_mac_key: enc_mac_key.toString('base64')
 	});
@@ -254,7 +262,7 @@ OpenIDProvider.prototype.associate = function(options) {
 OpenIDProvider.prototype.checkid_setup = function(options) {
 	//@TODO: correct identity
 	//@TODO: response_nonce "UNIQUE" needs to be unique
-	var IDENTITY = "http://localhost:3000/id/chris";
+	var IDENTITY = "http://home.reidsy.com/id/chris";
 	var assoc = this.associations.find(options['openid.assoc_handle']);
 	
 	var response = new Response({
