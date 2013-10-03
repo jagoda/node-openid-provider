@@ -1,7 +1,7 @@
 var express = require('express');
 var OpenIDProvider = require('./provider.js');
 
-var oidp = new OpenIDProvider("http://home.reidsy.com/login", {
+var oidp = new OpenIDProvider("http://home.reidsy.com/", {
 	association_expires: 60
 });
 
@@ -19,9 +19,8 @@ app.get('/', function (req, res) {
 
 app.get('/id/:name', function (req, res) {
 	console.log(req.method + " " + req.path, req.body['openid.mode']);
-	var ID_HOST = "http://home.reidsy.com/id/" + req.params.name;
 	res.header('Content-Type', 'application/xrds+xml;charset=utf-8');
-	var r = oidp.XRDSDocument(ID_HOST);
+	var r = oidp.XRDSDocument(req.params.name);
 	res.send(r);
 	res.end();
 });

@@ -8,5 +8,5 @@ index page must include
 
 User Pages must include
 
-	<link rel="openid2.local_id" href="http://snapinauth.com/user/username">
+	<link rel="openid2.local_id" href="http://snapinauth.com/openid/id/username">
 

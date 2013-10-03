@@ -209,8 +209,9 @@ Response.prototype._openidNamespacedFields = function() {
 /**
  * The openid provider
  */
-function OpenIDProvider(OPENID_OP_ENDPOINT, user_config) {
-	this.OPENID_OP_ENDPOINT = OPENID_OP_ENDPOINT;
+function OpenIDProvider(OPENID_ENDPOINT, user_config) {
+	this.OPENID_OP_ENDPOINT = url.resolve(OPENID_ENDPOINT, 'login');
+	this.OPENID_ID_ENDPOINT = url.resolve(OPENID_ENDPOINT, 'id/');
 	this.associations = new OpenIDAssociationService();
 	
 	this.config = {
@@ -328,7 +329,7 @@ OpenIDProvider.prototype.check_authentication = function(options) {
 	return validation.toForm();
 }
 
-OpenIDProvider.prototype.XRDSDocument = function(LocalID) {
+OpenIDProvider.prototype.XRDSDocument = function(localID) {
 	var doc = '<?xml version="1.0" encoding="UTF-8"?>\n'
 			+ '<xrds:XRDS xmlns:xrds="xri://$xrds" xmlns="xri://$xrd*($v*2.0)">\n'
 			+ '	<XRD>\n'
@@ -336,8 +337,8 @@ OpenIDProvider.prototype.XRDSDocument = function(LocalID) {
 			+ '			<Type>' + OPENID_SERVICE_TYPE + '</Type>\n'
 			+ '			<URI>' + this.OPENID_OP_ENDPOINT + '</URI>\n';
 	
-	if(LocalID) {
-		doc +='			<LocalID>' + LocalID + '</LocalID>\n';
+	if(localID) {
+		doc +='			<LocalID>' + url.resolve(this.OPENID_ID_ENDPOINT, localID) + '</LocalID>\n';
 	}
 	
 		doc +='		</Service>\n'
