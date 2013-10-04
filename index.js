@@ -18,12 +18,16 @@ app.get('/', function(req, res) {
 });
 
 app.all('/openid', function (req, res, next) {
-	var options = req.body || req.query;
-	var s = JSON.stringify(options);
-
+	var options = {}
+	if(req.method.toUpperCase() == "GET") {
+		options = req.query;
+	}
+	else if(req.method.toUpperCase() == "POST") {
+		options = req.body;
+	}
 	res.statusCode = 302;
 	res.header('Location', '/login');
-	res.cookie('oidpSession', s, {
+	res.cookie('oidpSession', JSON.stringify(options), {
 		expires: new Date(Date.now() + 2*60*1000),
 		path: '/',
 //		secure: true,
@@ -42,7 +46,7 @@ app.get('/auth', function(req, res) {
 	var url = oidp.checkid_setup_complete(username, options);
 	res.statusCode = 302;
 	res.header('Location', url);
-	res.end("DONE");
+	res.end();
 });
 
 app.listen(3000);

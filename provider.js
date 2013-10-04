@@ -223,26 +223,6 @@ function OpenIDProvider(OPENID_ENDPOINT, user_config) {
 	}
 }
 
-OpenIDProvider.prototype.handleRequest = function(req, res) {
-	console.warn("handleRequest is currently unsupported. Please use this module as connect/express middleware");
-	var acceptedMethods = {
-		associate: true,
-		checkid_setup: true,
-		checkid_immediate: true,
-		check_authentication: true
-	};
-	var options = req.body || req.query;
-	if(!options['openid.mode']) {
-		return this.XRDSDocument();
-	}
-	if(options['openid.mode'].toLowerCase() in acceptedMethods) {
-		return this[options['openid.mode'].toLowerCase()](options, req, res);
-	}
-	else {
-		throw new OpenIDModeNotFoundException(options['openid.mode']);
-	}
-}
-
 OpenIDProvider.prototype.associate = function(options) {
 	var assoc = this.associations.create();
 	var dh = crypto.createDiffieHellman(options['openid.dh_modulus'] || DH_MODULUS_B64, 'base64');
