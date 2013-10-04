@@ -1,8 +1,10 @@
+var PORT = 3000;
+var RESOURCE = "http://localhost:3000/openid/"
+
 var express = require('express');
 var OpenIDProvider = require('./provider.js');
 
-var HOSTNAME = "http://localhost:3000/openid/"
-var oidp = new OpenIDProvider(HOSTNAME, {
+var oidp = new OpenIDProvider(RESOURCE, {
 	association_expires: 60,
 });
 var app = express();
@@ -18,7 +20,7 @@ app.get('/', function(req, res) {
 			+ '<html>\n'
 			+ '	<head>\n'
 			+ '		<title>OpenID Provider</title>\n'
-			+ '		<link rel="openid2.provider" href="http://localhost:3000/openid">\n'
+			+ '		<link rel="openid2.provider" href="' + RESOURCE + '">\n'
 			+ '	</head>\n'
 			+ '	<body>\n'
 			+ '		<h1>Homepage for the openid provider</h1>\n'
@@ -32,7 +34,7 @@ app.get('/user/:id', function(req, res) {
 			+ '<html>\n'
 			+ '	<head>\n'
 			+ '		<title>OpenID Provider - User Page</title>\n'
-			+ '		<link rel="openid2.local_id" href="http://localhost:3000/openid/id/' + req.params.id + '">\n'
+			+ '		<link rel="openid2.local_id" href="' + RESOURCE + 'id/' + req.params.id + '">\n'
 			+ '	</head>\n'
 			+ '	<body>\n'
 			+ '		<h1>User page for the openid provider</h1>\n'
@@ -73,5 +75,5 @@ app.get('/auth', function(req, res) {
 	res.end();
 });
 
-app.listen(3000);
-console.log("Listening on port 3000");
+app.listen(PORT);
+console.log("Listening on port " + PORT);
