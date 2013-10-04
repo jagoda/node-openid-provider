@@ -224,6 +224,7 @@ function OpenIDProvider(OPENID_ENDPOINT, user_config) {
 }
 
 OpenIDProvider.prototype.handleRequest = function(req, res) {
+	console.warn("handleRequest is currently unsupported. Please use this module as connect/express middleware");
 	var acceptedMethods = {
 		associate: true,
 		checkid_setup: true,
