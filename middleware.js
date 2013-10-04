@@ -8,12 +8,12 @@ function configuration(defaults, options) {
 }
 
 function logging(req, res, next) {
-	console.log(req.method + " " + req.path, req.query['openid.mode']);
+	console.log(req.method + " " + req.path, (req.body || req.query)['openid.mode']);
 	next();
 }
 
 /** OPTIONS:
- * logging: [bool] true or false
+ * logging: [bool false] Set to true to enable logging
  */
 module.exports = function(oidp, options) {
 	var oidp = oidp;
@@ -30,23 +30,39 @@ module.exports = function(oidp, options) {
 	}
 	app.use(express.bodyParser());
 
-	app.get('/', function(req, res) {
-		var r = oidp.XRDSDocument();
-		console.log(r);
-		res.send(r);
-		res.end();
-	});
-
+	//id handler
 	app.get('/id/:name', function(req, res) {
 		var r = oidp.XRDSDocument(req.params.name);
 		res.send(r);
 		res.end();
 	});
 
-	app.all('/login', function(req, res) {
-		var r = oidp.handleRequest(req, res);
-		res.send(r);
-		res.end();
+	//openid method handler
+	app.all('/', function(req, res, next) {
+		var acceptedMethods = {
+			associate: true,
+			checkid_setup: true,
+			checkid_immediate: true,
+			check_authentication: true
+		};
+		var options = req.body || req.query;
+		if(!options['openid.mode']) {
+			res.header('Content-Type', 'application/xrds+xml;charset=utf-8');
+			res.send(oidp.XRDSDocument());
+			res.end();
+		}
+		else if(options['openid.mode'].toLowerCase() in acceptedMethods) {
+			var r = oidp[options['openid.mode'].toLowerCase()](options, next);
+			if(r) {
+				res.send(r);
+				res.end();
+			}
+		}
+		else {
+			res.statusCode = 400;
+			res.end("OpenIDModeNotFoundException: "+options['openid.mode']);
+			//throw new OpenIDModeNotFoundException(options['openid.mode']);
+		}
 	});
 
 	return app;

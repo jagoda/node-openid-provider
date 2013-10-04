@@ -210,7 +210,7 @@ Response.prototype._openidNamespacedFields = function() {
  * The openid provider
  */
 function OpenIDProvider(OPENID_ENDPOINT, user_config) {
-	this.OPENID_OP_ENDPOINT = url.resolve(OPENID_ENDPOINT, 'login');
+	this.OPENID_OP_ENDPOINT = OPENID_ENDPOINT;
 	this.OPENID_ID_ENDPOINT = url.resolve(OPENID_ENDPOINT, 'id/');
 	this.associations = new OpenIDAssociationService();
 	
@@ -271,10 +271,11 @@ OpenIDProvider.prototype.associate = function(options) {
 }
 
 /**
- * should print out a login page
+ * a request handler at the root url should be specified to override this function and display a login page
  */
-OpenIDProvider.prototype.checkid_setup = function(options, req, res) {
-	return '<a href="'+this.checkid_setup_complete("chris", options)+'">Log into the server</a>';
+OpenIDProvider.prototype.checkid_setup = function(options, next) {
+	next();
+	return null;
 }
 
 /**
