@@ -1,5 +1,5 @@
 var PORT = 3000;
-var RESOURCE = "http://localhost:3000/openid/"
+var RESOURCE = "http://home.reidsy.com/openid/"
 
 var express = require('express');
 var OpenIDProvider = require('./provider.js');
@@ -16,6 +16,7 @@ app.use(express.cookieParser());
 app.use(express.bodyParser());
 
 app.get('/', function(req, res) {
+	res.header('Content-Type', 'text/html');
 	res.end(  '<!DOCTYPE html>\n'
 			+ '<html>\n'
 			+ '	<head>\n'
@@ -30,6 +31,7 @@ app.get('/', function(req, res) {
 });
 
 app.get('/user/:id', function(req, res) {
+	res.header('Content-Type', 'text/html');
 	res.end(  '<!DOCTYPE html>\n'
 			+ '<html>\n'
 			+ '	<head>\n'

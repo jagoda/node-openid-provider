@@ -46,7 +46,19 @@ module.exports = function(oidp, options) {
 			checkid_immediate: true,
 			check_authentication: true
 		};
-		var options = req.body || req.query;
+		var options = {}
+		if(req.method.toUpperCase() == "GET") {
+			options = req.query;
+		}
+		else if(req.method.toUpperCase() == "POST") {
+			options = req.body;
+		}
+		else {
+			//bad request
+			res.statusCode = 405;
+			res.end();
+			return;
+		}
 		if(!options['openid.mode']) {
 			res.header('Content-Type', 'application/xrds+xml;charset=utf-8');
 			res.send(oidp.XRDSDocument());
