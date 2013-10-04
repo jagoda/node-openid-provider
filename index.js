@@ -14,8 +14,32 @@ app.use(express.cookieParser());
 app.use(express.bodyParser());
 
 app.get('/', function(req, res) {
-	res.end('<!DOCTYPE html><html><head><link rel="openid2.provider" href="http://localhost:3000/openid"></head><body><h1>Homepage for openid-provider</h1></body></html>');
+	res.end(  '<!DOCTYPE html>\n'
+			+ '<html>\n'
+			+ '	<head>\n'
+			+ '		<title>OpenID Provider</title>\n'
+			+ '		<link rel="openid2.provider" href="http://localhost:3000/openid">\n'
+			+ '	</head>\n'
+			+ '	<body>\n'
+			+ '		<h1>Homepage for the openid provider</h1>\n'
+			+ '		<p>By specifying the link "openid2.provider" in the head section, an openid consumer can find the provider from the root of a website</p>\n'
+			+ '	</body>\n'
+			+ '</html>\n');
 });
+
+app.get('/user/:id', function(req, res) {
+	res.end(  '<!DOCTYPE html>\n'
+			+ '<html>\n'
+			+ '	<head>\n'
+			+ '		<title>OpenID Provider - User Page</title>\n'
+			+ '		<link rel="openid2.local_id" href="http://localhost:3000/openid/id/' + req.params.id + '">\n'
+			+ '	</head>\n'
+			+ '	<body>\n'
+			+ '		<h1>User page for the openid provider</h1>\n'
+			+ '		<p>By specifying the link "openid2.local_id" in the head section, an openid consumer can find the provider and automatically determine which user wants to authenticate</p>\n'
+			+ '	</body>\n'
+			+ '</html>\n');
+})
 
 app.all('/openid', function (req, res, next) {
 	var options = {}

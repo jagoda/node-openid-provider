@@ -32,6 +32,7 @@ module.exports = function(oidp, options) {
 
 	//id handler
 	app.get('/id/:name', function(req, res) {
+		res.header('Content-Type', 'application/xrds+xml;charset=utf-8');
 		var r = oidp.XRDSDocument(req.params.name);
 		res.send(r);
 		res.end();
