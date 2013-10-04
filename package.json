@@ -1,6 +1,6 @@
 {
   "name": "openid-provider",
-  "version": "0.0.0",
+  "version": "0.0.1",
   "description": "An OpenID provider for NodeJS",
   "main": "index.js",
   "scripts": {
