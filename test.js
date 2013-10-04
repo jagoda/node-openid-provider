@@ -1,13 +1,18 @@
 var express = require('express');
-var myware = require('./middleware.js');
+var OpenIDProvider = require('./provider.js');
 
+var HOSTNAME = "http://localhost:3000/openid/"
 var app = express();
-
-app.use('/openid', myware());
+var oidp = new OpenIDProvider(HOSTNAME, {
+	association_expires: 60
+});
+app.use('/openid', oidp.middleware({
+	logging: true
+}));
 
 app.get('/', function(req, res) {
-	res.end("<h1>Hello World</h1>");
+	res.end('<!DOCTYPE html><html><head><link rel="openid2.provider" href="http://localhost:3000/openid/login"></head><body><h1>Hello World</h1></body></html>');
 });
 
-app.listen(1337);
-console.log("Listening on port 1337");
+app.listen(3000);
+console.log("Listening on port 3000");

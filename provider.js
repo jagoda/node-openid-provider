@@ -223,9 +223,19 @@ function OpenIDProvider(OPENID_ENDPOINT, user_config) {
 	}
 }
 
-OpenIDProvider.prototype.handleRequest = function(options) {
-	if(options['openid.mode'].toLowerCase() in this) {
-		return this[options['openid.mode'].toLowerCase()](options);
+OpenIDProvider.prototype.handleRequest = function(req, res) {
+	var acceptedMethods = {
+		associate: true,
+		checkid_setup: true,
+		checkid_immediate: true,
+		check_authentication: true
+	};
+	var options = req.body || req.query;
+	if(!options['openid.mode']) {
+		return this.XRDSDocument();
+	}
+	if(options['openid.mode'].toLowerCase() in acceptedMethods) {
+		return this[options['openid.mode'].toLowerCase()](options, req, res);
 	}
 	else {
 		throw new OpenIDModeNotFoundException(options['openid.mode']);
@@ -260,18 +270,27 @@ OpenIDProvider.prototype.associate = function(options) {
 	return response.toForm();
 }
 
-OpenIDProvider.prototype.checkid_setup = function(options) {
-	//@TODO: correct identity
+/**
+ * should print out a login page
+ */
+OpenIDProvider.prototype.checkid_setup = function(options, req, res) {
+	return '<a href="'+this.checkid_setup_complete("chris", options)+'">Log into the server</a>';
+}
+
+/**
+ * login page handler, must provide an unique identifier plus openid arguments
+ * returns a url
+ */
+OpenIDProvider.prototype.checkid_setup_complete = function(uid, options) {
 	//@TODO: response_nonce "UNIQUE" needs to be unique
-	var IDENTITY = "http://home.reidsy.com/id/chris";
 	var assoc = this.associations.find(options['openid.assoc_handle']);
-	
+	var identifier = url.resolve(this.OPENID_ID_ENDPOINT, uid);
 	var response = new Response({
 		ns: OPENID_NS,
 		mode: "id_res",
 		op_endpoint: this.OPENID_OP_ENDPOINT,
-		claimed_id: IDENTITY,
-		identity: IDENTITY,
+		claimed_id: identifier,
+		identity: identifier,
 		return_to: unescape(options['openid.return_to']),
 		response_nonce: new Date().toISOString().split(".")[0]+"Z"+"UNIQUE", //the openid spec doesn't use correct iso strings?
 	});
@@ -287,7 +306,7 @@ OpenIDProvider.prototype.checkid_setup = function(options) {
 	response.set('assoc_handle', assoc.handle);
 	response.sign(assoc.hash, new Buffer(assoc.secret, 'base64'));
 
-	return '<a href="'+response.toURL()+'">Log into the server</a>';
+	return response.toURL();
 }
 
 OpenIDProvider.prototype.checkid_immediate = function(options) {
@@ -345,6 +364,11 @@ OpenIDProvider.prototype.XRDSDocument = function(localID) {
 			+ '	</XRD>\n'
 			+ '</xrds:XRDS>\n'
 	return doc;
+}
+
+OpenIDProvider.prototype.middleware = function(options) {
+	var mware = require('./middleware.js');
+	return mware(this, options);
 }
 
 module.exports = OpenIDProvider;

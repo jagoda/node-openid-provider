@@ -1,7 +1,7 @@
 var express = require('express');
 var OpenIDProvider = require('./provider.js');
 
-var oidp = new OpenIDProvider("http://home.reidsy.com/", {
+var oidp = new OpenIDProvider("http://localhost:3000/", {
 	association_expires: 60
 });
 
@@ -27,14 +27,14 @@ app.get('/id/:name', function (req, res) {
 
 app.get('/login', function (req, res) {
 	console.log(req.method + " " + req.path, req.query['openid.mode']);
-	var r = oidp.handleRequest(req.query);
+	var r = oidp.handleRequest(req, res);
 	res.send(r);
 	res.end();
 });
 
 app.post('/*', function (req, res) {
 	console.log(req.method + " " + req.path, req.body['openid.mode']);
-	var r = oidp.handleRequest(req.body);
+	var r = oidp.handleRequest(req, res);
 	res.send(r);
 	res.end();
 });
