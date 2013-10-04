@@ -2,7 +2,7 @@
   "name": "openid-provider",
   "version": "0.0.1",
   "description": "An OpenID provider for NodeJS",
-  "main": "index.js",
+  "main": "provider.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "node --debug=5858 index.js"
