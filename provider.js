@@ -214,7 +214,8 @@ function OpenIDProvider(OPENID_ENDPOINT, user_config) {
 	this.associations = new OpenIDAssociationService();
 	
 	this.config = {
-		association_expires: 1209600 //1209600 seconds == 14 days
+		association_expires: 1209600, //1209600 seconds == 14 days
+		checkid_params: 'oidp'
 	}
 	//merge options
 	for(var key in user_config || {}) {
@@ -364,7 +365,7 @@ OpenIDProvider.prototype.middleware = function(options) {
 			}
 		}
 		if(options.mode in ACCEPTED_METHODS) {
-			req.oidp = options;
+			req[oidp.config.checkid_params] = options;
 			var r = oidp[options.mode](options, req, res, next);
 			if(r) {
 				res.send(r);
