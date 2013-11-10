@@ -211,7 +211,6 @@ Response.prototype._openidNamespacedFields = function() {
  */
 function OpenIDProvider(OPENID_ENDPOINT, user_config) {
 	this.OPENID_OP_ENDPOINT = OPENID_ENDPOINT;
-	this.OPENID_ID_ENDPOINT = url.resolve(OPENID_ENDPOINT, 'id/');
 	this.associations = new OpenIDAssociationService();
 	
 	this.config = {
@@ -266,7 +265,7 @@ OpenIDProvider.prototype.checkid_setup = function(options, next) {
 OpenIDProvider.prototype.checkid_setup_complete = function(uid, options) {
 	//@TODO: response_nonce "UNIQUE" needs to be unique
 	var assoc = this.associations.find(options['openid.assoc_handle']);
-	var identifier = url.resolve(this.OPENID_ID_ENDPOINT, uid);
+	var identifier = url.resolve(this.OPENID_OP_ENDPOINT, uid);
 	var response = new Response({
 		ns: OPENID_NS,
 		mode: "id_res",
@@ -339,7 +338,7 @@ OpenIDProvider.prototype.XRDSDocument = function(localID) {
 			+ '			<URI>' + this.OPENID_OP_ENDPOINT + '</URI>\n';
 	
 	if(localID) {
-		doc +='			<LocalID>' + url.resolve(this.OPENID_ID_ENDPOINT, localID) + '</LocalID>\n';
+		doc +='			<LocalID>' + url.resolve(this.OPENID_OP_ENDPOINT, localID) + '</LocalID>\n';
 	}
 	
 		doc +='		</Service>\n'

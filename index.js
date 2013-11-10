@@ -1,5 +1,5 @@
 var PORT = 3000;
-var RESOURCE = "http://home.reidsy.com/openid/"
+var RESOURCE = "http://localhost:3000/openid/"
 
 var express = require('express');
 var OpenIDProvider = require('./provider.js');
@@ -65,7 +65,8 @@ app.all('/openid', function (req, res, next) {
 });
 
 app.get('/login', function(req, res) {
- 	res.end('<a href="/auth?username=chris">Log in as Chris</a>');
+	res.header('Content-Type', 'text/html');
+ 	res.end('<form action="/auth" method="GET"><input type="text" name="username"><button type="submit" value="herp">Login</submit></form>');
 });
 
 app.get('/auth', function(req, res) {
