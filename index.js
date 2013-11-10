@@ -1,11 +1,17 @@
+var HOSTNAME = 'localhost';
 var PORT = 3000;
-var RESOURCE = "http://localhost:"+PORT+"/"
+function OPENID_ENDPOINT() {
+	return "http://"+HOSTNAME+":"+PORT+"/login";
+}
+function OPENID_USER_ENDPOINT(username) {
+	return "http://"+HOSTNAME+":"+PORT+"/users/"+username.toLowerCase();
+}
 
 var express = require('express');
 var OpenIDProvider = require('./provider.js');
 
 //create new openidprovider
-var oidp = new OpenIDProvider(RESOURCE, {
+var oidp = new OpenIDProvider(OPENID_ENDPOINT(), {
 	association_expires: 60,
 	request_data: 'oidp'
 });
@@ -13,16 +19,16 @@ var oidp = new OpenIDProvider(RESOURCE, {
 var app = express();
 app.use(express.cookieParser());
 app.use(express.bodyParser());
-app.use(oidp.middleware());
+app.use('/login', oidp.middleware());
 
 //home page handler
-app.get('/home', function(req, res, next) {
+app.get('/', function(req, res, next) {
 	res.header('Content-Type', 'text/html');
 	res.end(  '<!DOCTYPE html>\n'
 			+ '<html>\n'
 			+ '	<head>\n'
 			+ '		<title>OpenID Provider</title>\n'
-			+ '		<link rel="openid2.provider" href="' + RESOURCE + '">\n'
+			+ '		<link rel="openid2.provider" href="' + OPENID_ENDPOINT() + '">\n'
 			+ '	</head>\n'
 			+ '	<body>\n'
 			+ '		<h1>Homepage for the openid provider</h1>\n'
@@ -31,63 +37,44 @@ app.get('/home', function(req, res, next) {
 			+ '</html>\n');
 });
 
-// //openid handler
-// app.post('/login', function(req, res, next) {
-// 	var NAMESPACE = "openid.";
-// 	var ACCEPTED_METHODS = {
-// 		associate: true,
-// 		checkid_setup: true,
-// 		checkid_immediate: true,
-// 		check_authentication: true
-// 	};
-// 	var options = {};
-// 	for(var opt in req.body) {
-// 		if(opt.indexOf("openid.") == 0) {
-// 			var key = opt.substr(NAMESPACE.length);
-// 			options[key.toLowerCase()] = req.body[opt];
-// 		}
-// 	}
-// 	if(options.mode.toLowerCase() in ACCEPTED_METHODS) {
-// 		req.oidp = options;
-// 		var r = oidp[options.mode.toLowerCase()](options, req, res, next);
-// 		if(r) {
-// 			res.send(r);
-// 			res.end();
-// 		}
-// 		else {
-// 			next();
-// 		}
-// 	}
-// 	else {
-// 		//throw new OpenIDModeNotFoundException(options['openid.mode']);
-// 		next();
-// 	}
-// });
-
 //openid login handler
-app.all('/', function(req, res, next) {
-	if(req.oidp) {
-		//lets assume they are already logged in and just redirect
-		res.redirect(303, oidp.checkid_setup_complete(req.oidp, "http://localhost:"+PORT+"/user/chris"));
+app.all('/login', function(req, res, next) {
+	//the user is trying to log in
+	if(req.body.username && req.cookies.oidpSession) {
+		res.clearCookie('oidpSession');
+		var username = req.body.username || req.query.username
+		var oidpSession = JSON.parse(req.cookies.oidpSession);
+		res.redirect(303, oidp.checkid_setup_complete(oidpSession, OPENID_USER_ENDPOINT(username)));
 		res.end();
 		return;
 	}
-	//do the standard user login page
+	//an openid request was made
+	if(req.oidp) {
+		res.cookie('oidpSession', JSON.stringify(req.oidp), {
+			expires: new Date(Date.now() + 2*60*1000),
+			path: '/'
+		});
+	}
+	//show the standard user login page
 	res.header('Content-Type', 'text/html');
 	res.end(  '<!DOCTYPE html>\n'
 			+ '<html>\n'
 			+ '	<head>\n'
 			+ '		<title>OpenID Provider</title>\n'
-			+ '		<link rel="openid2.provider" href="' + RESOURCE + '">\n'
+			+ '		<link rel="openid2.provider" href="' + OPENID_ENDPOINT() + '">\n'
 			+ '	</head>\n'
 			+ '	<body>\n'
-			+ '		<h1>Login page for the openid provider</h1>\n'
+			+ '		<h1>Login to node-openid-provider</h1>\n'
+			+ '		<form method="post">\n'
+			+ '			<input type="text" name="username" value="Chris">\n'
+			+ '			<button type="submit">Login</button>\n'
+			+ '		</form>\n'
 			+ '	</body>\n'
 			+ '</html>\n');
 });
 
 //user page handler
-app.get('/user/:username', function(req, res, next) {
+app.get('/users/:username', function(req, res, next) {
 	//user page
 	//needs to have the openid link rel tag
 	res.header('Content-Type', 'text/html');
@@ -95,8 +82,8 @@ app.get('/user/:username', function(req, res, next) {
 			+ '<html>\n'
 			+ '	<head>\n'
 			+ '		<title>OpenID Provider - User Page</title>\n'
-			+ '		<link rel="openid2.provider" href="' + RESOURCE + '">\n'
-			+ '		<link rel="openid2.local_id" href="http://localhost:'+PORT+'/user/' + req.params.username + '">\n'
+			+ '		<link rel="openid2.provider" href="' + OPENID_ENDPOINT() + '">\n'
+			+ '		<link rel="openid2.local_id" href="' + OPENID_USER_ENDPOINT(req.params.username) + '">\n'
 			+ '	</head>\n'
 			+ '	<body>\n'
 			+ '		<h1>User page for the openid provider</h1>\n'

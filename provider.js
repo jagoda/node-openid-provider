@@ -369,15 +369,10 @@ OpenIDProvider.prototype.middleware = function(options) {
 			if(r) {
 				res.send(r);
 				res.end();
-			}
-			else {
-				next();
+				return;
 			}
 		}
-		else {
-			//throw new OpenIDModeNotFoundException(options['openid.mode']);
-			next();
-		}
+		next();
 	}
 }
 
