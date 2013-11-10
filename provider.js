@@ -224,12 +224,12 @@ function OpenIDProvider(OPENID_ENDPOINT, user_config) {
 
 OpenIDProvider.prototype.associate = function(options) {
 	var assoc = this.associations.create();
-	var dh = crypto.createDiffieHellman(options['openid.dh_modulus'] || DH_MODULUS_B64, 'base64');
+	var dh = crypto.createDiffieHellman(options.dh_modulus || DH_MODULUS_B64, 'base64');
 	dh.generateKeys();
-	var dh_secret = dh.computeSecret(options['openid.dh_consumer_public'], 'base64');
+	var dh_secret = dh.computeSecret(options.dh_consumer_public, 'base64');
 	//@TODO: support non diffie-hellman associations: no-encryption, hmac-sha1, hmac-sha256
 	//@TODO: verify the hash is supported
-	var assoc_type_hash = options['openid.assoc_type'].match("SHA[0-9]+$")[0].toLowerCase();
+	var assoc_type_hash = options.assoc_type.match("SHA[0-9]+$")[0].toLowerCase();
 	assoc.hash = assoc_type_hash;
 	var shasum = crypto.createHash(assoc_type_hash);
 	shasum.update( btwoc(dh_secret) );
@@ -240,8 +240,8 @@ OpenIDProvider.prototype.associate = function(options) {
 	var response = new Response({
 		ns: OPENID_NS,
 		assoc_handle: assoc.handle,
-		session_type: options['openid.session_type'], //no-encryption|DH-SHA1|DH-SHA256
-		assoc_type: options['openid.assoc_type'], //{non-existent}|HMAC-SHA1|HMAC-SHA256
+		session_type: options.session_type, //no-encryption|DH-SHA1|DH-SHA256
+		assoc_type: options.assoc_type, //{non-existent}|HMAC-SHA1|HMAC-SHA256
 		expires_in: this.config.association_expires,
 		dh_server_public: dh.getPublicKey('base64'),
 		enc_mac_key: enc_mac_key.toString('base64')
@@ -253,8 +253,7 @@ OpenIDProvider.prototype.associate = function(options) {
 /**
  * a request handler at the root url should be specified to override this function and display a login page
  */
-OpenIDProvider.prototype.checkid_setup = function(options, next) {
-	next();
+OpenIDProvider.prototype.checkid_setup = function(options) {
 	return null;
 }
 
@@ -262,22 +261,21 @@ OpenIDProvider.prototype.checkid_setup = function(options, next) {
  * login page handler, must provide an unique identifier plus openid arguments
  * returns a url
  */
-OpenIDProvider.prototype.checkid_setup_complete = function(uid, options) {
+OpenIDProvider.prototype.checkid_setup_complete = function(options, localID) {
 	//@TODO: response_nonce "UNIQUE" needs to be unique
-	var assoc = this.associations.find(options['openid.assoc_handle']);
-	var identifier = url.resolve(this.OPENID_OP_ENDPOINT, uid);
+	var assoc = this.associations.find(options.assoc_handle);
 	var response = new Response({
 		ns: OPENID_NS,
 		mode: "id_res",
 		op_endpoint: this.OPENID_OP_ENDPOINT,
-		claimed_id: identifier,
-		identity: identifier,
-		return_to: unescape(options['openid.return_to']),
+		claimed_id: localID,
+		identity: localID,
+		return_to: unescape(options.return_to),
 		response_nonce: new Date().toISOString().split(".")[0]+"Z"+"UNIQUE", //the openid spec doesn't use correct iso strings?
 	});
 
-	if(assoc == null && options['openid.assoc_handle']) { //if the consumer provided a handle, tell them it is invalid
-		response.set('invalidate_handle', options['openid.assoc_handle']);
+	if(assoc == null && options.assoc_handle) { //if the consumer provided a handle, tell them it is invalid
+		response.set('invalidate_handle', options.assoc_handle);
 	}
 
 	if(assoc == null) { //create an association because a valid handle wasn't provided
@@ -293,7 +291,7 @@ OpenIDProvider.prototype.checkid_setup_complete = function(uid, options) {
 OpenIDProvider.prototype.checkid_immediate = function(options) {
 	//@TODO: Not Implemented
 	console.error("checkid_immediate not yet implemented");
-	throw new OpenIDModeNotFoundException(options['openid.mode']);
+	throw new OpenIDModeNotFoundException(options.mode);
 }
 
 OpenIDProvider.prototype.check_authentication = function(options) {
@@ -301,7 +299,7 @@ OpenIDProvider.prototype.check_authentication = function(options) {
 		ns: OPENID_NS
 	});
 
-	var assoc = this.associations.find(options['openid.assoc_handle']);
+	var assoc = this.associations.find(options.assoc_handle);
 	if(assoc == null) { //fail if they havn't given an assoc_handle
 		validation.set('is_valid', 'false');
 		return validation.toForm();
@@ -309,7 +307,7 @@ OpenIDProvider.prototype.check_authentication = function(options) {
 
 	//rebuild the form
 	var response = new Response();
-	var fields = options['openid.signed'].split(',');
+	var fields = options.signed.split(',');
 	for(var field in fields) {
 		response.set(fields[field], options["openid." + fields[field]] );
 	}
@@ -318,8 +316,8 @@ OpenIDProvider.prototype.check_authentication = function(options) {
 	response.sign(assoc.hash, new Buffer(assoc.secret, 'base64'));
 
 	//check it's correct and respond
-	if(   response.get('sig') == options['openid.sig'] &&
-	   response.get('signed') == options['openid.signed'] ) {
+	if(   response.get('sig') == options.sig &&
+	   response.get('signed') == options.signed ) {
 		validation.set('is_valid', 'true');
 	}
 	else {
@@ -338,7 +336,7 @@ OpenIDProvider.prototype.XRDSDocument = function(localID) {
 			+ '			<URI>' + this.OPENID_OP_ENDPOINT + '</URI>\n';
 	
 	if(localID) {
-		doc +='			<LocalID>' + url.resolve(this.OPENID_OP_ENDPOINT, localID) + '</LocalID>\n';
+		doc +='			<LocalID>' + localID + '</LocalID>\n';
 	}
 	
 		doc +='		</Service>\n'
@@ -348,8 +346,39 @@ OpenIDProvider.prototype.XRDSDocument = function(localID) {
 }
 
 OpenIDProvider.prototype.middleware = function(options) {
-	var mware = require('./middleware.js');
-	return mware(this, options);
+	var oidp = this;
+
+	return function(req, res, next) {
+		var NAMESPACE = "openid.";
+		var ACCEPTED_METHODS = {
+			associate: true,
+			checkid_setup: true,
+			checkid_immediate: true,
+			check_authentication: true
+		};
+		var options = {};
+		for(var opt in req.body) {
+			if(opt.indexOf("openid.") == 0) {
+				var key = opt.substr(NAMESPACE.length);
+				options[key.toLowerCase()] = req.body[opt];
+			}
+		}
+		if(options.mode in ACCEPTED_METHODS) {
+			req.oidp = options;
+			var r = oidp[options.mode](options, req, res, next);
+			if(r) {
+				res.send(r);
+				res.end();
+			}
+			else {
+				next();
+			}
+		}
+		else {
+			//throw new OpenIDModeNotFoundException(options['openid.mode']);
+			next();
+		}
+	}
 }
 
 module.exports = OpenIDProvider;
