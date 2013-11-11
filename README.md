@@ -6,7 +6,7 @@ An OpenID Provider implementation currently in early stages of development. It i
 
 ## Usage
 
-A working example is provided in index.js which can be started with `npm start`
+Several examples are available in /examples
 
 ### Create an instance of the openid provider
 

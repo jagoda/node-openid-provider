@@ -30,15 +30,14 @@ app.get('/', function(req, res, next) {
 //handle authentication
 app.post('/', function(req, res, next) {
 	if(req.oidp) {
-		//assume the user 'Chris' is already logged in
+		//here you would perform the login procedure, such as display a login page
+		//assuming the user 'Chris' is already logged in, complete the authentication
 		var url = oidp.checkid_setup_complete(req.oidp, OPENID_USER_ENDPOINT('Chris'));
 		res.redirect(303, url);
 		res.end();
 	}
 	else {
-		console.log('Invalid OpenID Request');
-		res.header('Content-Type', "application/xrds+xml");
-		res.send(oidp.XRDSDocument());
+		res.send(400, 'Not an OpenID Request');
 		res.end();
 	}
 });
