@@ -16,7 +16,7 @@
   "bugs": {
     "url": "https://github.com/reidsy/node-openid-provider/issues"
   },
-  "dependencies": {
+  "devDependencies": {
     "express": "~3.4.0"
   }
 }
