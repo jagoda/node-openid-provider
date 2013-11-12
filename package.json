@@ -2,17 +2,16 @@
   "name": "openid-provider",
   "version": "0.2.0",
   "description": "An OpenID provider for NodeJS",
-  "main": "provider.js",
+  "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "node --debug=5858 index.js"
+    "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
     "type": "git",
     "url": "https://github.com/reidsy/node-openid-provider"
   },
   "author": "Chris Reid <chris@reidsy.com> (http://reidsy.com/)",
-  "license": "BSD-2-Clause",
+  "license": "MIT",
   "bugs": {
     "url": "https://github.com/reidsy/node-openid-provider/issues"
   },
