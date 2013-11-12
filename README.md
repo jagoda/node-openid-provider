@@ -4,6 +4,12 @@
 
 An OpenID Provider implementation currently in early stages of development. It is designed to be used as connect middleware but an api is provided so it can be implemented in any system.
 
+## Installation
+
+Use [npm](http://npmjs.org): `npm install openid-provider`.
+
+Or download the source from [GitHub](https://github.com/havard/node-openid): `git clone https://github.com/Reidsy/node-openid-provider.git`.
+
 ## Usage
 
 Several examples are available in /examples
