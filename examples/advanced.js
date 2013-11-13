@@ -8,7 +8,7 @@ function OPENID_USER_ENDPOINT(username) {
 }
 
 var express = require('express');
-var OpenIDProvider = require('../lib/Provider.js');
+var OpenIDProvider = require('../index.js');
 
 //create new openidprovider
 var oidp = new OpenIDProvider(OPENID_ENDPOINT(), {
