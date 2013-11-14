@@ -17,7 +17,7 @@ var oidp = new OpenIDProvider(OPENID_ENDPOINT());
 var app = express();
 
 //the openid provider middleware requires bodyParser
-app.use(express.bodyParser());
+app.use(express.urlencoded());
 app.use(oidp.middleware());
 
 //create an XRDS Document for the server

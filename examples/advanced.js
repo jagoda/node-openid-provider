@@ -18,7 +18,7 @@ var oidp = new OpenIDProvider(OPENID_ENDPOINT(), {
 //create new express app
 var app = express();
 app.use(express.cookieParser());
-app.use(express.bodyParser());
+app.use(express.urlencoded());
 app.use('/login', oidp.middleware());
 
 //home page handler

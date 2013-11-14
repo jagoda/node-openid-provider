@@ -70,13 +70,3 @@ Several examples are available in /examples
 ### Create an xrds document for an id
 
 	oidp.XRDSDocument("http://localhost:3000/user/UniqueName");
-
-## Limitations and Progress
-
-- `checkid_immediate` is not implemented.
-- Not all values for assoc_type and session_type are supported.
-- Associations are stored in memory. Instead a persistence layer must be created.
-- No test suite yet.
-- `response_nonce` is not unique.
-- `xor()` function needs to be converted to use buffers.
-- I have reason to believe the `btwoc()` function may not always work correctly.
