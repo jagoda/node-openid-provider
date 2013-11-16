@@ -1,6 +1,4 @@
 var assert = require('assert');
-var supertest = require('supertest');
-var OpenIDProvider = require('../index.js');
 var MemoryAssociationManager = require('../lib/associationManagers/MemoryAssociationManager.js');
 
 suite("AssociationManager Tests", function() {
