@@ -16,6 +16,8 @@
     "url": "https://github.com/reidsy/node-openid-provider/issues"
   },
   "devDependencies": {
-    "express": "~3.4.0"
+    "express": "~3.4.0",
+    "mocha": "~1.14.0",
+    "supertest": "~0.8.1"
   }
 }
