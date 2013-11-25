@@ -133,10 +133,21 @@ suite("Response Tests", function() {
 			field_three: "Carrot"
 		};
 		var res = new Response(incoming);
+        
 		assert.equal(res.toForm(), FORM);
 	});
 
     test("Import response from Key-Value Form", function() {
+        var FORM = 'field_one:Apple\n' 
+                 + 'field_two:Banana\n'
+                 + 'field_three:Carrot\n';
+        var res = Response.fromForm(FORM);
+        
+        assert.deepEqual(res.fields(), {
+            field_one: "Apple",
+            field_two: "Banana",
+            field_three: "Carrot"
+        });
     });
     
 	test("Convert response to a URL", function() {
@@ -148,6 +159,7 @@ suite("Response Tests", function() {
         });
         res.set('return_to', RETURN_TO_URL);
         var purl = url.parse(res.toURL(), true);
+        
     	assert.equal(purl.protocol, 'http:');
 		assert.equal(purl.hostname, 'example.com');
 		assert.equal(purl.pathname, '/');
@@ -160,6 +172,14 @@ suite("Response Tests", function() {
 	});
 
     test("Import from response from URL", function() {
+        var IN_URL = "http://example.com/?herp=123&openid.one=first&openid.two=second&openid.return_to=http%3A%2F%2Fexample.com%2F%3Fherp%3D123";
+        var res = Response.fromURL(IN_URL);
+        
+        assert.deepEqual(res.fields(), {
+            one: "first",
+            two: "second",
+            return_to: "http://example.com/?herp=123"
+        });
     });
     
 });
