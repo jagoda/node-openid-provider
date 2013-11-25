@@ -3,15 +3,6 @@ var Response = require('../lib/Response.js');
 var url = require('url');
 
 suite("Response Tests", function() {
-	var TEST_OBJECT;
-
-	setup(function() {
-		TEST_OBJECT = {
-			field_one: "Apple",
-			field_two: "Banana",
-			field_three: "Carrot"
-		};
-	});
 
 	test("Create a response without setting any fields", function() {
 		var res = new Response();
@@ -19,54 +10,81 @@ suite("Response Tests", function() {
 		assert.doesNotThrow(function() {
 			Object.keys(res._fields);
 		}, "Response has not correctly prepared to store fields");
-		assert.equal(Object.keys(res._fields).length, 0, "The fields object is not empty");
+		assert.equal(Object.keys(res._fields).length, 0);
 	});
 
 	test("Create a response object with default fields", function() {
-		var res = new Response(TEST_OBJECT);
+        var incoming = {
+			field_one: "Apple",
+			field_two: "Banana",
+			field_three: "Carrot"
+		};
+		var res = new Response(incoming);
 		
 		assert.doesNotThrow(function() {
 			Object.keys(res._fields);
-		}, "Response has not correctly prepared to store fields");
-		assert.equal(Object.keys(res._fields).length, 3, "An incorrect number of fields has been stored");
+		});
+		assert.equal(Object.keys(res._fields).length, 3);
 
-		assert.ok('field_one' in res._fields, "First field was not stored");
-		assert.equal(res._fields['field_one'], "Apple", "Data for first field is incorrect");
+		assert.ok('field_one' in res._fields);
+		assert.equal(res._fields['field_one'], "Apple");
 
-		assert.ok('field_two' in res._fields, "Middle field was not stored");
-		assert.equal(res._fields['field_two'], "Banana", "Data for middle field is incorrect");
+		assert.ok('field_two' in res._fields);
+		assert.equal(res._fields['field_two'], "Banana");
 
-		assert.ok('field_three' in res._fields, "Last field was not stored");
-		assert.equal(res._fields['field_three'], "Carrot", "Data for last field is incorrect");
+		assert.ok('field_three' in res._fields);
+		assert.equal(res._fields['field_three'], "Carrot");
 	});
 
 	test("Get all fields from response object", function() {
-		var res = new Response(TEST_OBJECT);
+        var incoming = {
+			field_one: "Apple",
+			field_two: "Banana",
+			field_three: "Carrot"
+		};
+		var res = new Response(incoming);
 
-		assert.equal(res.fields(), res._fields, "The fields returned from the object does not match the internel fields object");
-		assert.equal(res.fields(), TEST_OBJECT, "The stored fields does not match the fields passed in");
+        assert.deepEqual(res.fields(), res._fields);
+        assert.deepEqual(res.fields(), incoming);
 	});
 
 	test("Get the value of a field", function() {
-		var res = new Response(TEST_OBJECT);
-		assert.equal(res.get('field_one'), "Apple", "Did not correctly retrieve the first field");
-		assert.equal(res.get('field_two'), "Banana", "Did not correctly retrieve the middle field");
-		assert.equal(res.get('field_three'), "Carrot", "Did not correctly retrieve the third field");
-		assert.equal(res.get('nonexistent_field'), null, "Null value not returned when getting an item that doesn't exist");
+        var incoming = {
+			field_one: "Apple",
+			field_two: "Banana",
+			field_three: "Carrot"
+		};
+		var res = new Response(incoming);
+        
+		assert.equal(res.get('field_one'), "Apple");
+		assert.equal(res.get('field_two'), "Banana");
+		assert.equal(res.get('field_three'), "Carrot");
+		assert.equal(res.get('nonexistent_field'), null);
 	});
 
 	test("Set the value of a field", function() {
-		var res = new Response(TEST_OBJECT);
+        var incoming = {
+			field_one: "Apple",
+			field_two: "Banana",
+			field_three: "Carrot"
+		};
+		var res = new Response(incoming);
+        
 		res.set('field_one', 'Apricot');
-		assert.equal(res.get('field_one'), "Apricot", "Existing field was not set correctly");
+		assert.equal(res.get('field_one'), "Apricot");
+        
 		res.set('new_field', 'Date');
-		assert.equal(res.get('new_field'), "Date", "New field was not set correctly");
+		assert.equal(res.get('new_field'), "Date");
 	});
 
 	test("Remove a field", function() {
-		var res = new Response(TEST_OBJECT);
+		var res = new Response({
+			field_one: "Apple",
+			field_two: "Banana",
+			field_three: "Carrot"
+		});
 		res.unset('field_one');
-		assert.equal(res.get('field_one'), null, "Field was not removed");
+		assert.equal(res.get('field_one'), null);
 	});
 
 	test("Sign a response using SHA1", function() {
@@ -75,7 +93,12 @@ suite("Response Tests", function() {
 		var SIGNED = 'field_one,field_two,field_three';
 		var SIG = 'JR+u4a7LREkUwGMkRUUaiOLxgMc=';
 
-		var res = new Response(TEST_OBJECT);
+        var incoming = {
+			field_one: "Apple",
+			field_two: "Banana",
+			field_three: "Carrot"
+		};
+		var res = new Response(incoming);
 		res.sign(HASH, SECRET);
 
 		assert.equal(res.get('signed'), SIGNED, "Missing fields in signature");
@@ -88,7 +111,12 @@ suite("Response Tests", function() {
 		var SIGNED = 'field_one,field_two,field_three';
 		var SIG = '895F6ten0pMkFv9m2qj15Rs1LgwAZg/nUdlMY4LW5F8=';
 
-		var res = new Response(TEST_OBJECT);
+        var incoming = {
+			field_one: "Apple",
+			field_two: "Banana",
+			field_three: "Carrot"
+		};
+		var res = new Response(incoming);
 		res.sign(HASH, SECRET);
 
 		assert.equal(res.get('signed'), SIGNED, "Missing fields in signature");
@@ -99,26 +127,39 @@ suite("Response Tests", function() {
 		var FORM = 'field_one:Apple\n' 
 				 + 'field_two:Banana\n'
 				 + 'field_three:Carrot\n';
-		var res = new Response(TEST_OBJECT);
-		assert.equal(res.toForm(), FORM, "Form encoded incorrectly");
+        var incoming = {
+			field_one: "Apple",
+			field_two: "Banana",
+			field_three: "Carrot"
+		};
+		var res = new Response(incoming);
+		assert.equal(res.toForm(), FORM);
 	});
 
+    test("Import response from Key-Value Form", function() {
+    });
+    
 	test("Convert response to a URL", function() {
 		var RETURN_TO_URL = "http://example.com/?herp=123";
-		var QUERY_OBJECT = TEST_OBJECT
-			QUERY_OBJECT.herp = '123'
-
-		var res = new Response(TEST_OBJECT);
-		res.set('return_to', RETURN_TO_URL);
-		var purl = url.parse(res.toURL(), true);
-		
-		assert.equal(purl.protocol, 'http:', "Protocol doesn't match");
-		assert.equal(purl.hostname, 'example.com', "Hostname doesn't match");
-		assert.equal(purl.pathname, '/', "Pathname doesn't match");
-		assert.equal(purl.query, QUERY_OBJECT, "Query string doesn't match");
+        
+        var res = new Response({
+            one: "first",
+            two: "second"
+        });
+        res.set('return_to', RETURN_TO_URL);
+        var purl = url.parse(res.toURL(), true);
+    	assert.equal(purl.protocol, 'http:');
+		assert.equal(purl.hostname, 'example.com');
+		assert.equal(purl.pathname, '/');
+        assert.deepEqual(purl.query, {
+            "openid.one": "first",
+            "openid.two": "second",
+            "openid.return_to": RETURN_TO_URL,
+            "herp": "123"
+        });
 	});
 
-	teardown(function() {
-		delete TEST_OBJECT;
-	});
+    test("Import from response from URL", function() {
+    });
+    
 });
