@@ -1,5 +1,6 @@
 var assert = require("assert");
 var OpenIDProvider = require("../lib/Provider.js");
+var url = require("url");
 
 function Request(method, options) {
 	this.method = method.toUpperCase();
@@ -26,12 +27,17 @@ Response.prototype.send = function(data) {
 };
 
 suite("Provider Tests", function() {
+	var OPENID_ENDPOINT = "http://localhost/login";
+	var provider;
+	
+	setup(function() {
+		provider = new OpenIDProvider(OPENID_ENDPOINT);
+	});
+	
 	suite("middleware", function() {
-		var OPENID_ENDPOINT = "http://localhost/login";
-		var middleware, provider;
+		var middleware;
 		
 		setup(function() {
-			provider = new OpenIDProvider(OPENID_ENDPOINT);
 			middleware = provider.middleware();
 		});
 		
@@ -90,5 +96,16 @@ suite("Provider Tests", function() {
 			middleware(request, response, done);
 			assert.ok(handled, "Middleware failed to handle request.");
 		});
+	});
+	
+	test("Generate error response", function() {
+		var options = { return_to: "http://example.com/foo" };
+		var parsedUrl = url.parse(provider.error(options, "An error."), true);
+		
+		assert.equal(parsedUrl.query["openid.mode"], "error", "Incorrect mode.");
+		assert.equal(parsedUrl.query["openid.ns"], "http://specs.openid.net/auth/2.0", "Incorrect namespace.");
+		assert.equal(parsedUrl.query["openid.error"], "An error.", "Incorrect message.");
+		assert.equal(parsedUrl.hostname, "example.com", "Incorrect hostname.");
+		assert.equal(parsedUrl.pathname, "/foo", "Incorrect path.");
 	});
 });
