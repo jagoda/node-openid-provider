@@ -41,8 +41,7 @@ suite("Provider Tests", function() {
 			middleware = provider.middleware();
 		});
 		
-		test("Parse options from GET request", function() {
-			var handled = false;
+		test("Parse options from GET request", function(done) {
 			var options = {
 				"openid.ns": "http://specs.openid.net/auth/2.0",
 				"openid.mode": "checkid_setup"
@@ -50,7 +49,7 @@ suite("Provider Tests", function() {
 			var request = new Request("GET", options);
 			var response = new Response();
 			
-			function done() {
+			function callback() {
 				var expectedOptions = {
 					ns: "http://specs.openid.net/auth/2.0",
 					mode: "checkid_setup"
@@ -60,17 +59,15 @@ suite("Provider Tests", function() {
 				assert.deepEqual(request.oidp, expectedOptions);
 				assert.equal(response.data, undefined, "Response should not have data.");
 				assert.equal(response.ended, false, "Response should not have ended.");
-				handled = true;
+				done();
 			}
 			
 			assert.ok(request.query, "Request should have a query hash.");
 			assert.equal(request.body, undefined, "Request should not have a body.");
-			middleware(request, response, done);
-			assert.ok(handled, "Middleware failed to handle request.");
+			middleware(request, response, callback);
 		});
 		
-		test("Parse options from POST request", function() {
-			var handled = false;
+		test("Parse options from POST request", function(done) {
 			var options = {
 				"openid.ns": "http://specs.openid.net/auth/2.0",
 				"openid.mode": "checkid_setup"
@@ -78,7 +75,7 @@ suite("Provider Tests", function() {
 			var request = new Request("POST", options);
 			var response = new Response();
 			
-			function done() {
+			function callback() {
 				var expectedOptions = {
 					ns: "http://specs.openid.net/auth/2.0",
 					mode: "checkid_setup"
@@ -88,13 +85,12 @@ suite("Provider Tests", function() {
 				assert.deepEqual(request.oidp, expectedOptions);
 				assert.equal(response.data, undefined, "Response should not have data.");
 				assert.equal(response.ended, false, "Response should not have ended.");
-				handled = true;
+				done();
 			}
 			
 			assert.ok(request.body, "Request should have a body.");
 			assert.equal(request.query, undefined, "Request should not have a query hash.");
-			middleware(request, response, done);
-			assert.ok(handled, "Middleware failed to handle request.");
+			middleware(request, response, callback);
 		});
 	});
 	
@@ -107,5 +103,57 @@ suite("Provider Tests", function() {
 		assert.equal(parsedUrl.query["openid.error"], "An error.", "Incorrect message.");
 		assert.equal(parsedUrl.hostname, "example.com", "Incorrect hostname.");
 		assert.equal(parsedUrl.pathname, "/foo", "Incorrect path.");
+	});
+});
+
+suite("Extended Providers", function() {
+	suite("Attribute Exchange", function() {
+		var OPENID_ENDPOINT = "http://localhost/login";
+		var middleware, provider;
+		
+		setup(function() {
+			var extension = new OpenIDProvider.AttributeExchange();
+			provider = new OpenIDProvider(OPENID_ENDPOINT);
+			middleware = provider.middleware();
+			provider.extend(extension);
+			
+			extension.getAttribute = function (schema, localId) {
+				var attribute = null;
+				
+				if (schema === "http://example.com/schema/thing") {
+					attribute = localId + "'s thing";
+				}
+				
+				return attribute;
+			};
+		});
+		
+		test("Return available attributes", function(done) {
+			var options = {
+				"openid.ns": "http://specs.openid.net/auth/2.0",
+				"openid.mode": "checkid_setup",
+				"openid.ns.ax": "http://openid.net/srv/ax/1.0",
+				"openid.ax.mode": "fetch_request",
+				"openid.ax.type.thing": "http://example.com/schema/thing",
+				"openid.ax.type.other": "http://example.com/schema/other",
+				"openid.ax.required": "thing,other"
+			};
+			var request = new Request("POST", options);
+			var response = new Response();
+			
+			function callback() {
+				var returnUrl = provider.checkid_setup_complete(request.oidp, "foo");
+				var query = url.parse(returnUrl, true).query;
+				
+				assert.equal(query["openid.ns.ax"], "http://openid.net/srv/ax/1.0");
+				assert.equal(query["openid.ax.mode"], "fetch_response");
+				assert.equal(query["openid.ax.type.thing"], "http://example.com/schema/thing");
+				assert.equal(query["openid.ax.value.thing"], "foo's thing");
+				assert.ok(!query["openid.ax.type.other"]);
+				done();
+			}
+			
+			middleware(request, response, callback);
+		});
 	});
 });
