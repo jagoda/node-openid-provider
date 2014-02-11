@@ -1,5 +1,1 @@
-#node
 node_modules/*
-
-#intelij
-.idea
