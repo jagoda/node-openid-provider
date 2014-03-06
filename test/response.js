@@ -123,6 +123,24 @@ suite("Response Tests", function() {
 		assert.equal(res.get('sig'), SIG, "Incorrect signature");
 	});
 
+	test("Sign a response contains utf8 characters using SHA256", function() {
+		var HASH = 'sha256';
+		var SECRET = new Buffer('WXIlq6ECPk590dkZhoYq2j1Cq+OmO9mSZZwDZyXUK7Y=', 'base64');
+		var SIGNED = 'field_one,field_two,field_three';
+		var SIG = 'KTUObeIaY2XHWwnhsFcgPSgZKy5mlIQkpZ9oBG7Mj9k=';
+
+        var incoming = {
+			field_one: "苹果",
+			field_two: "香蕉",
+			field_three: "萝卜"
+		};
+		var res = new Response(incoming);
+		res.sign(HASH, SECRET);
+
+		assert.equal(res.get('signed'), SIGNED, "Missing fields in signature");
+		assert.equal(res.get('sig'), SIG, "Incorrect signature");
+	});
+
 	test("Convert response to a Key-Value Form", function() {
 		var FORM = 'field_one:Apple\n' 
 				 + 'field_two:Banana\n'
